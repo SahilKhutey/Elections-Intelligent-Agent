@@ -1,5 +1,5 @@
 {
-  "name": "election-assistant-client",
+  "name": "election_assistant_client",
   "version": "0.1.0",
   "private": true,
   "scripts": {
