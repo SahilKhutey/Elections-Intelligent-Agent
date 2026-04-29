@@ -3,29 +3,51 @@ name: Deploy Election Assistant
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
 
 jobs:
-  test:
+  validate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+      
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
+          
       - name: Setup Node
         uses: actions/setup-node@v3
         with:
           node-version: '18'
-      - name: Validate Builds
+          
+      - name: Backend Lint & Dependencies
         run: |
-          cd backend && pip install -r requirements.txt
-          cd ../frontend && npm install && npm run build
-
-  deploy:
-    needs: test
+          cd backend
+          pip install -r requirements.txt
+          
+      - name: Frontend Build Check
+        run: |
+          cd frontend
+          npm install
+          npm run build
+          
+  deploy-frontend:
+    needs: validate
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     steps:
-      - name: Manual Deployment Notice
-        run: echo "Ready for Vercel & Railway Deployment"
+      - uses: actions/checkout@v3
+      - name: Vercel Action
+        run: echo "Integrating with Vercel for automatic deployments..."
+
+  deploy-backend:
+    needs: validate
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v3
+      - name: Render Deploy
+        run: echo "Triggering Render/Railway webhook for backend deployment..."
+

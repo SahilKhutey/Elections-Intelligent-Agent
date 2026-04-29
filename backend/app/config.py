@@ -7,10 +7,12 @@ class Settings(BaseSettings):
     CLAUDE_API_KEY: str = ""
     ADMIN_PASSWORD: str = "admin123"
     ENVIRONMENT: str = "development"
-    CORS_ORIGINS: list = ["*"]
+    CORS_ORIGINS: list[str] = ["*"]
     
     class Config:
         env_file = ".env"
+        case_sensitive = True
+
 
 @lru_cache()
 def get_settings():
