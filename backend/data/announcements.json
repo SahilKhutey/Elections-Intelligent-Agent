@@ -1,0 +1,40 @@
+{
+  "India": [
+    {
+      "title": "Voter Registration Deadline",
+      "message": "Last date to register is March 30. Ensure your name is in the voter list.",
+      "type": "important"
+    },
+    {
+      "title": "Electoral Bond Update",
+      "message": "New transparency guidelines issued for electoral contributions.",
+      "type": "info"
+    }
+  ],
+  "Bhopal": [
+    {
+      "title": "Polling Booth Update",
+      "message": "Booth #23 moved to Govt School near Arera Colony.",
+      "type": "alert"
+    },
+    {
+      "title": "Local Candidate List",
+      "message": "Final candidate list for Bhopal constituency is now available at the ECI portal.",
+      "type": "info"
+    }
+  ],
+  "Delhi": [
+    {
+      "title": "Special Identity Drive",
+      "message": "Visit your local SDM office for Voter ID corrections this weekend.",
+      "type": "important"
+    }
+  ],
+  "Mumbai": [
+    {
+      "title": "Youth Voting Campaign",
+      "message": "Join the 'Mumbai Votes' rally at Marine Drive this Sunday.",
+      "type": "info"
+    }
+  ]
+}

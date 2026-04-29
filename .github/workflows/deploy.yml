@@ -1,0 +1,31 @@
+name: Deploy Election Assistant
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      - name: Validate Builds
+        run: |
+          cd backend && pip install -r requirements.txt
+          cd ../frontend && npm install && npm run build
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Manual Deployment Notice
+        run: echo "Ready for Vercel & Railway Deployment"

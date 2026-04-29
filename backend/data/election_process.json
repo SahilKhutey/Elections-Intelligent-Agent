@@ -1,0 +1,30 @@
+{
+  "general": {
+    "steps": [
+      "Check your name in the Voter List on the ECI website.",
+      "Identify your Polling Station and Booth number.",
+      "Bring your Voter ID card (EPIC) or an alternative approved identity document.",
+      "Go to the Polling Station on the election day during polling hours.",
+      "Get your finger marked with indelible ink by the polling officer.",
+      "Proceed to the voting compartment and cast your vote on the EVM/VVPAT."
+    ],
+    "documents": [
+      "Voter Identity Card (EPIC)",
+      "Aadhaar Card",
+      "PAN Card",
+      "Driving License",
+      "Passport",
+      "Passbook with photograph issued by Bank/Post Office"
+    ]
+  },
+  "Bhopal": {
+    "steps": [
+      "Check Bhopal Municipal Corporation voter list.",
+      "Locate your booth (often in local Government schools or Community Halls).",
+      "Follow local administrative guidelines for queue management."
+    ],
+    "documents": [
+      "Standard ECI approved documents apply."
+    ]
+  }
+}

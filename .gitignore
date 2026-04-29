@@ -1,0 +1,23 @@
+# Version Control Bloat Prevention
+node_modules/
+.next/
+out/
+build/
+dist/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+.env
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project Specific
+data/large_backups/
+temp/

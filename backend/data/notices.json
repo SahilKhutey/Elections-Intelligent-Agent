@@ -1,0 +1,23 @@
+[
+  {
+    "id": "21ad0ff2-7fa9-4bc9-b056-1781fd9f9cc2",
+    "title": "URGENT: SYSTEM LIVE",
+    "content": "The EIA is now live and fully synchronized.",
+    "type": "info",
+    "timestamp": "2026-04-29T08:27:43.372606"
+  },
+  {
+    "id": "0a391b9f-dc85-4bcb-b007-ec7b23ad4456",
+    "title": "System Ready",
+    "content": "EIA is fully operational.",
+    "type": "info",
+    "timestamp": "2026-04-29T08:26:08.009547"
+  },
+  {
+    "id": "1",
+    "title": "Polling Station Update",
+    "content": "Due to local events, Polling Station #42 has moved to the Community Center.",
+    "type": "urgent",
+    "timestamp": "2026-04-29T08:00:00Z"
+  }
+]

@@ -1,0 +1,21 @@
+{
+  "general": {
+    "stages": [
+      {"stage": "Registration Opens", "status": "30 days before"},
+      {"stage": "Verification Period", "status": "15 days duration"},
+      {"stage": "Campaign Period", "status": "45 days duration"},
+      {"stage": "Voting Day", "status": "1 day"},
+      {"stage": "Result Declaration", "status": "1-7 days after"}
+    ]
+  },
+  "india": {
+    "stages": [
+      {"stage": "Notification Issue", "status": "ECI Announcement"},
+      {"stage": "Nomination Filing", "status": "7 days window"},
+      {"stage": "Scrutiny", "status": "1 day after filing"},
+      {"stage": "Withdrawal", "status": "2 days after scrutiny"},
+      {"stage": "Polling Day", "status": "Scheduled Phase"},
+      {"stage": "Counting of Votes", "status": "Results Day"}
+    ]
+  }
+}

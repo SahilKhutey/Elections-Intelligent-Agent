@@ -1,0 +1,22 @@
+{
+  "registration": {
+    "question": "How do I register as a new voter?",
+    "answer": "You can register online through the Voter Helpline App or the ECI Voter Portal (voters.eci.gov.in) by filling Form 6."
+  },
+  "eligibility": {
+    "question": "Who is eligible to vote?",
+    "answer": "Every Indian citizen who is 18 years or older on the qualifying date is eligible, unless disqualified by law."
+  },
+  "missing_id": {
+    "question": "Can I vote without a Voter ID card?",
+    "answer": "Yes, if your name is on the electoral roll, you can vote by showing any of the 12 alternative photo identity documents approved by the ECI."
+  },
+  "booth_info": {
+    "question": "How do I find my polling booth?",
+    "answer": "You can find your booth by searching your name on the ECI Electoral Search portal or by sending an SMS with your EPIC number to 1950."
+  },
+  "voting_process": {
+    "question": "What is the VVPAT machine?",
+    "answer": "Voter Verifiable Paper Audit Trail (VVPAT) is an independent system attached to the EVM that allows voters to verify that their votes are cast as intended."
+  }
+}

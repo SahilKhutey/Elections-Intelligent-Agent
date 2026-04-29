@@ -1,0 +1,7 @@
+{
+  "rules": [
+    "Must be at least 18 years old",
+    "Must be a citizen",
+    "Must be registered in your constituency"
+  ]
+}

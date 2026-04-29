@@ -1,0 +1,64 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary: #0B5FFF;        /* Govt Blue */
+  --primary-hover: #084ACC;
+  --secondary: #F4F7FE;      /* Light Background */
+  --surface: #FFFFFF;        /* White Surface */
+  --text-primary: #1A1A1A;
+  --text-secondary: #555555;
+  --border: #E0E0E0;
+  --success: #2E7D32;
+  --warning: #ED6C02;
+  --error: #D32F2F;
+}
+
+@layer base {
+  body {
+    @apply bg-[#F4F7FE] text-[#1A1A1A] font-sans selection:bg-blue-500/20 antialiased;
+  }
+}
+
+@layer components {
+  .gov-card {
+    @apply bg-white border border-[#E0E0E0] rounded-xl shadow-sm overflow-hidden;
+  }
+  
+  .input-field {
+    @apply bg-white border border-[#E0E0E0] rounded-lg px-4 py-2 focus:outline-none focus:border-[#0B5FFF] focus:ring-2 focus:ring-[#0B5FFF]/10 transition-all text-[#1A1A1A];
+  }
+
+  .btn-gov {
+    @apply bg-[#0B5FFF] hover:bg-[#084ACC] text-white font-semibold px-6 py-2.5 rounded-lg transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-outline {
+    @apply border border-[#E0E0E0] hover:bg-gray-50 text-[#1A1A1A] font-medium px-6 py-2.5 rounded-lg transition-all active:scale-95;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #374151;
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #4B5563;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}

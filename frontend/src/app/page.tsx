@@ -1,0 +1,314 @@
+"use client";
+
+import React, { useState, useEffect } from 'react';
+import { Shield, Bell, X, AlertTriangle, MessageSquare, ListChecks, Calendar, HelpCircle } from 'lucide-react';
+import { useLanguage } from './context/LanguageContext';
+import { useUser } from './context/UserContext';
+import Header from './components/Header';
+import Intro from './components/Intro';
+import ChatBox from './components/ChatBox';
+import QuickActions from './components/QuickActions';
+import StepByStepGuide from './components/StepByStepGuide';
+import OnboardingModal from './components/OnboardingModal';
+import Announcements from './components/Announcements';
+
+const API_BASE = "http://localhost:8000/api";
+
+const UI_STRINGS = {
+  en: {
+    placeholder: "Ask something about elections...",
+    timelineTitle: "Election Timeline",
+    footer: "© 2026 Election Commission Information Service • Powered by Secure AI",
+    aiThinking: "Generating response based on official guidelines...",
+    actions: ["Voter Guide", "Key Dates", "Eligibility", "Common Questions"],
+    intents: ["How do I vote?", "Show election timeline", "Am I eligible to vote?", "Show FAQs"],
+    nav: ["Assistant", "Guide", "Timeline"],
+    adminTitle: "Admin Portal",
+    noticeTitle: "Publish Official Notice"
+  },
+  hi: {
+    placeholder: "चुनावों के बारे में कुछ पूछें...",
+    timelineTitle: "चुनाव समयरेखा",
+    footer: "© 2026 चुनाव आयोग सूचना सेवा • सुरक्षित एआई द्वारा संचालित",
+    aiThinking: "आधिकारिक दिशानिर्देशों के आधार पर प्रतिक्रिया उत्पन्न की जा रही है...",
+    actions: ["मतदाता गाइड", "महत्वपूर्ण तिथियां", "पात्रता", "सामान्य प्रश्न"],
+    intents: ["मैं वोट कैसे डालूं?", "चुनाव की समयरेखा दिखाएं", "क्या मैं वोट देने के लिए पात्र हूं?", "सामान्य प्रश्न दिखाएं"],
+    nav: ["सहायक", "गाइड", "समयरेखा"],
+    adminTitle: "एडमिन पोर्टल",
+    noticeTitle: "आधिकारिक सूचना प्रकाशित करें"
+  }
+};
+
+export default function ElectionAssistant() {
+  const { lang } = useLanguage();
+  const { user, updateUser } = useUser();
+  const [activeView, setActiveView] = useState<'chat' | 'guide' | 'timeline'>('chat');
+  const [query, setQuery] = useState("");
+  const [chat, setChat] = useState<{ role: 'user' | 'ai', content: string }[]>([]);
+  const [timeline, setTimeline] = useState<any[]>([]);
+  const [notices, setNotices] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [provider, setProvider] = useState("openai");
+  
+  // Admin State
+  const [isAdminOpen, setIsAdminOpen] = useState(false);
+  const [adminPassword, setAdminPassword] = useState("");
+  const [newNotice, setNewNotice] = useState({ title: "", content: "", type: "info" });
+  const [adminError, setAdminError] = useState("");
+
+  const t = UI_STRINGS[lang];
+
+  useEffect(() => {
+    if (user.onboarded) {
+      fetchTimeline();
+      fetchNotices();
+    }
+  }, [lang, user.location, user.onboarded]);
+
+  const fetchTimeline = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/timeline?lang=${lang}&location=${user.location}`);
+      const data = await res.json();
+      setTimeline(data.timeline || []);
+    } catch (err) {
+      console.error("Failed to fetch timeline", err);
+    }
+  };
+
+  const fetchNotices = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/notices`);
+      const data = await res.json();
+      setNotices(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Failed to fetch notices", err);
+      setNotices([]);
+    }
+  };
+
+  const handleSend = async (customQuery?: string) => {
+    const activeQuery = customQuery || query;
+    if (!activeQuery) return;
+
+    setActiveView('chat');
+    setLoading(true);
+    setChat(prev => [...prev, { role: 'user', content: activeQuery }]);
+    if (!customQuery) setQuery("");
+
+    try {
+      const response = await fetch(`${API_BASE}/query`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          query: activeQuery, 
+          lang: lang,
+          location: user.location,
+          age: user.age || undefined,
+          provider: provider
+        })
+      });
+      const data = await response.json();
+      setChat(prev => [...prev, { role: 'ai', content: data.ai_response }]);
+    } catch (err) {
+      setChat(prev => [...prev, { role: 'ai', content: lang === 'en' ? "Service temporarily unavailable. Please try again later." : "सेवा अस्थायी रूप से अनुपलब्ध है। कृपया बाद में पुनः प्रयास करें।" }]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const publishNotice = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/notices`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...newNotice, password: adminPassword })
+      });
+      if (!res.ok) throw new Error("Unauthorized");
+      const data = await res.json();
+      setNotices(prev => [data, ...prev]);
+      setIsAdminOpen(false);
+      setAdminPassword("");
+      setNewNotice({ title: "", content: "", type: "info" });
+      setAdminError("");
+    } catch (err) {
+      setAdminError("Authentication failed.");
+    }
+  };
+
+  const handleCheckEligibility = async () => {
+    setLoading(true);
+    setActiveView('chat');
+    const userMsg = lang === 'hi' ? "क्या मैं वोट देने के लिए पात्र हूं?" : "Am I eligible to vote?";
+    setChat(prev => [...prev, { role: 'user', content: userMsg }]);
+
+    try {
+      const response = await fetch(`${API_BASE}/eligibility`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          age: user.age || 0,
+          is_citizen: user.is_citizen,
+          is_resident: user.is_resident,
+          lang: lang
+        })
+      });
+      const data = await response.json();
+      setChat(prev => [...prev, { role: 'ai', content: data.message }]);
+    } catch (err) {
+      setChat(prev => [...prev, { role: 'ai', content: lang === 'en' ? "Failed to check eligibility. Please try again." : "पात्रता जाँच विफल रही। कृपया पुनः प्रयास करें।" }]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleActionClick = (id: string, intent: string) => {
+    if (id === 'guide') setActiveView('guide');
+    else if (id === 'timeline') setActiveView('timeline');
+    else if (intent.includes("eligible")) handleCheckEligibility();
+    else handleSend(intent);
+  };
+
+  return (
+    <div className="min-h-screen bg-[#F4F7FE] text-[#1A1A1A] font-sans">
+      {!user.onboarded && <OnboardingModal />}
+
+      {/* Urgent Notice Bar (UX4G Style) */}
+      {Array.isArray(notices) && notices.filter(n => n.type === 'urgent').length > 0 && (
+        <div className="bg-[#D32F2F] text-white py-2.5 px-6 flex items-center justify-center gap-3 sticky top-0 z-[60] shadow-md border-b border-red-700/20">
+          <AlertTriangle className="w-4 h-4 fill-white text-[#D32F2F]" />
+          <p className="text-sm font-bold tracking-wide">
+            {lang === 'hi' ? 'महत्वपूर्ण:' : 'URGENT:'} {(notices || []).find(n => n.type === 'urgent')?.title}
+          </p>
+          <span className="hidden sm:inline opacity-90 text-sm font-medium">| {(notices || []).find(n => n.type === 'urgent')?.content}</span>
+        </div>
+      )}
+
+      {/* Admin Modal (Light Theme) */}
+      {isAdminOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#1A1A1A]/40 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white border border-[#E0E0E0] rounded-2xl p-8 max-w-md w-full shadow-2xl relative">
+            <button onClick={() => setIsAdminOpen(false)} className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-full transition-colors"><X className="w-5 h-5 text-[#555555]" /></button>
+            <h2 className="text-2xl font-bold mb-6 flex items-center gap-2 text-[#1A1A1A]"><Shield className="text-[#0B5FFF]" /> {t.adminTitle}</h2>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-[#555555] uppercase mb-1.5 ml-1">Access Key</label>
+                <input type="password" placeholder="••••••••" value={adminPassword} onChange={(e) => setAdminPassword(e.target.value)} className="w-full bg-white border border-[#E0E0E0] rounded-xl py-3 px-5 focus:outline-none focus:border-[#0B5FFF] focus:ring-4 focus:ring-[#0B5FFF]/5 text-[#1A1A1A]" />
+              </div>
+              <div className="h-px bg-[#E0E0E0] my-2"></div>
+              <div>
+                <label className="block text-xs font-bold text-[#555555] uppercase mb-1.5 ml-1">Notice Details</label>
+                <input type="text" placeholder="Title" value={newNotice.title} onChange={(e) => setNewNotice({...newNotice, title: e.target.value})} className="w-full bg-white border border-[#E0E0E0] rounded-xl py-3 px-5 focus:outline-none focus:border-[#0B5FFF] mb-3 text-[#1A1A1A]" />
+                <textarea placeholder="Message content..." value={newNotice.content} onChange={(e) => setNewNotice({...newNotice, content: e.target.value})} className="w-full bg-white border border-[#E0E0E0] rounded-xl py-3 px-5 focus:outline-none focus:border-[#0B5FFF] min-h-[100px] text-[#1A1A1A]" />
+              </div>
+              <select value={newNotice.type} onChange={(e) => setNewNotice({...newNotice, type: e.target.value})} className="w-full bg-white border border-[#E0E0E0] rounded-xl py-3 px-5 focus:outline-none focus:border-[#0B5FFF] text-[#1A1A1A]">
+                <option value="info">General Information</option>
+                <option value="urgent">Urgent Alert</option>
+                <option value="success">Status Update</option>
+              </select>
+              {adminError && <p className="text-[#D32F2F] text-xs px-2 flex items-center gap-1 font-medium"><AlertTriangle className="w-3.5 h-3.5" /> {adminError}</p>}
+              <button onClick={publishNotice} className="w-full bg-[#0B5FFF] hover:bg-[#084ACC] text-white py-4 rounded-xl font-bold transition-all shadow-lg shadow-[#0B5FFF]/10 active:scale-95">Publish Notice</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 pb-32">
+        <Header 
+          location={user.location} setLocation={(loc) => updateUser({ location: loc })} 
+          age={user.age || ""} setAge={(age) => updateUser({ age: age || null })} 
+          provider={provider} setProvider={setProvider}
+          setIsAdminOpen={setIsAdminOpen}
+        />
+
+        <Intro />
+
+        {/* Dynamic Views */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+          <div className="lg:col-span-2 space-y-8">
+            {activeView === 'chat' && (
+              <div className="animate-fade-in space-y-8">
+                <ChatBox 
+                  chat={chat} loading={loading} 
+                  query={query} setQuery={setQuery} 
+                  handleSend={handleSend} 
+                  placeholder={t.placeholder}
+                  aiThinking={t.aiThinking}
+                  location={user.location}
+                />
+                <QuickActions 
+                  onSelect={handleActionClick} 
+                  actions={t.actions} 
+                  intents={t.intents} 
+                />
+              </div>
+            )}
+
+            {activeView === 'guide' && (
+              <div className="animate-fade-in bg-white border border-[#E0E0E0] rounded-2xl p-8 shadow-sm">
+                <StepByStepGuide />
+              </div>
+            )}
+
+            {activeView === 'timeline' && (
+              <div className="bg-white border border-[#E0E0E0] rounded-2xl p-8 shadow-sm animate-fade-in">
+                <h2 className="text-2xl font-bold mb-8 flex items-center gap-2 text-[#1A1A1A]"><Calendar className="text-[#0B5FFF] w-6 h-6" /> {t.timelineTitle}</h2>
+                <div className="grid gap-6">
+                  {timeline.map((step, i) => (
+                    <div key={i} className="flex items-start gap-5 p-5 rounded-xl bg-white border border-[#E0E0E0] hover:bg-[#F4F7FE] transition-all group">
+                      <div className="w-11 h-11 rounded-lg bg-[#F4F7FE] flex items-center justify-center text-[#0B5FFF] font-bold group-hover:bg-[#0B5FFF] group-hover:text-white transition-all shadow-sm border border-[#0B5FFF]/10">{i+1}</div>
+                      <div>
+                        <h4 className="font-bold text-[#1A1A1A] text-lg">{step.stage}</h4>
+                        <p className="text-sm text-[#555555] leading-relaxed mt-1 font-medium">{step.status}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <aside className="space-y-8">
+            <Announcements />
+            
+            {/* Gov Help Desk Info */}
+            <div className="bg-[#0B5FFF] text-white p-6 rounded-2xl shadow-lg shadow-[#0B5FFF]/10">
+              <h4 className="font-bold mb-2 flex items-center gap-2">
+                <HelpCircle className="w-4 h-4" /> Need Immediate Help?
+              </h4>
+              <p className="text-xs text-blue-50 leading-relaxed mb-4">
+                Contact the Voter Helpline for urgent queries regarding your registration or polling location.
+              </p>
+              <div className="bg-white/10 p-3 rounded-lg flex items-center justify-between">
+                <span className="text-sm font-bold tracking-wider">HELPLINE</span>
+                <span className="text-xl font-black">1950</span>
+              </div>
+            </div>
+          </aside>
+        </div>
+
+        {/* Bottom Navigation (UX4G Style) */}
+        <div className="fixed bottom-10 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-xl border border-[#E0E0E0] rounded-2xl p-1.5 shadow-2xl flex gap-1 z-50">
+          {[
+            { id: 'chat', label: t.nav[0], icon: <MessageSquare className="w-4 h-4" /> },
+            { id: 'guide', label: t.nav[1], icon: <ListChecks className="w-4 h-4" /> },
+            { id: 'timeline', label: t.nav[2], icon: <Calendar className="w-4 h-4" /> }
+          ].map((nav) => (
+            <button 
+              key={nav.id} 
+              onClick={() => setActiveView(nav.id as any)} 
+              className={`flex items-center gap-2 px-6 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${activeView === nav.id ? 'bg-[#0B5FFF] text-white shadow-lg shadow-[#0B5FFF]/20' : 'text-[#555555] hover:text-[#0B5FFF] hover:bg-[#F4F7FE]'}`}
+            >
+              {nav.icon}
+              <span className="hidden sm:inline">{nav.label}</span>
+            </button>
+          ))}
+        </div>
+
+        <p className="text-center mt-16 text-[#9CA3AF] text-[10px] font-bold tracking-[0.2em] uppercase max-w-lg mx-auto leading-relaxed">
+          {t.footer}
+        </p>
+      </main>
+    </div>
+  );
+}
+
