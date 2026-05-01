@@ -8,11 +8,13 @@ interface UserState {
   is_citizen: boolean;
   is_resident: boolean;
   onboarded: boolean;
+  token?: string;
 }
 
 interface UserContextType {
   user: UserState;
   updateUser: (data: Partial<UserState>) => void;
+  initSession: () => Promise<void>;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -23,14 +25,18 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     location: "India",
     is_citizen: true,
     is_resident: true,
-    onboarded: false
+    onboarded: false,
+    token: undefined
   });
 
   useEffect(() => {
     const saved = localStorage.getItem("eia-user-profile");
+    const token = localStorage.getItem("eia-auth-token");
+    
     if (saved) {
       try {
-        setUser(JSON.parse(saved));
+        const parsed = JSON.parse(saved);
+        setUser({ ...parsed, token: token || undefined });
       } catch (e) {
         console.error("Failed to parse user profile", e);
       }
@@ -43,8 +49,32 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     localStorage.setItem("eia-user-profile", JSON.stringify(updated));
   };
 
+  const initSession = async () => {
+    if (!user.onboarded) return;
+
+    try {
+      const res = await fetch("http://localhost:8000/api/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          age: user.age,
+          location: user.location,
+          is_citizen: user.is_citizen,
+          is_resident: user.is_resident
+        })
+      });
+      const data = await res.json();
+      if (data.access_token) {
+        setUser(prev => ({ ...prev, token: data.access_token }));
+        localStorage.setItem("eia-auth-token", data.access_token);
+      }
+    } catch (err) {
+      console.error("Failed to initialize session", err);
+    }
+  };
+
   return (
-    <UserContext.Provider value={{ user, updateUser }}>
+    <UserContext.Provider value={{ user, updateUser, initSession }}>
       {children}
     </UserContext.Provider>
   );

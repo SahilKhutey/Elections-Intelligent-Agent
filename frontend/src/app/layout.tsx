@@ -9,6 +9,9 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 export const metadata: Metadata = {
   title: "EIA | Election Intelligence Assistant",
   description: "Your personalized AI guide to the election process.",
+  manifest: "/manifest.json",
+  themeColor: "#0B5FFF",
+  viewport: "width=device-width, initial-scale=1, maximum-scale=1",
 };
 
 export default function RootLayout({

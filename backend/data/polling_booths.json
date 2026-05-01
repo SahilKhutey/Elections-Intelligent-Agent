@@ -1,0 +1,38 @@
+{
+  "Bhopal": [
+    {
+      "name": "Govt School Booth 23",
+      "lat": 23.2599,
+      "lng": 77.4126,
+      "address": "Govt School, Arera Colony, Bhopal"
+    },
+    {
+      "name": "Community Hall Booth 12",
+      "lat": 23.233,
+      "lng": 77.398,
+      "address": "Ward 12, Maharana Pratap Nagar, Bhopal"
+    }
+  ],
+  "Delhi": [
+    {
+      "name": "Central Delhi Primary School",
+      "lat": 28.6139,
+      "lng": 77.209,
+      "address": "Near India Gate, New Delhi"
+    },
+    {
+      "name": "Rohini Sector 7 Polling Center",
+      "lat": 28.7041,
+      "lng": 77.1025,
+      "address": "Sector 7, Rohini, Delhi"
+    }
+  ],
+  "Mumbai": [
+    {
+      "name": "Bandra West Municipal Office",
+      "lat": 19.0596,
+      "lng": 72.8295,
+      "address": "Hill Road, Bandra West, Mumbai"
+    }
+  ]
+}

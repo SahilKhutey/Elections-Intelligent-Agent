@@ -1,0 +1,18 @@
+{
+  "how to vote": {
+    "en": "To vote: Register → Verify ID → Visit polling booth → Cast vote.",
+    "hi": "वोट देने के लिए: पंजीकरण → पहचान सत्यापन → मतदान केंद्र → वोट करें।"
+  },
+  "lost voter id": {
+    "en": "Download a duplicate from NVSP or use another valid ID.",
+    "hi": "NVSP से डुप्लिकेट डाउनलोड करें या अन्य पहचान पत्र का उपयोग करें।"
+  },
+  "where to vote": {
+    "en": "You must vote at your assigned polling booth.",
+    "hi": "आपको अपने निर्धारित मतदान केंद्र पर ही वोट देना होगा।"
+  },
+  "am i eligible": {
+    "en": "You must be 18+ and an Indian citizen.",
+    "hi": "आपकी आयु 18+ और भारतीय नागरिक होना चाहिए।"
+  }
+}

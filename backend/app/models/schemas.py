@@ -1,38 +1,40 @@
-from pydantic import BaseModel
-from typing import List, Optional
+from pydantic import BaseModel, Field, field_validator
+import re
+from typing import Optional
 
 class QueryRequest(BaseModel):
-    query: str
-    location: Optional[str] = "general"
-    lang: Optional[str] = "en"
-    age: Optional[int] = None
-    provider: str = "openai"
-    api_key: Optional[str] = None
+    query: str = Field(..., min_length=2, max_length=500, description="The user's election-related question.")
+    lang: str = Field("en", pattern="^(en|hi)$", description="Language code (en or hi).")
+    location: str = Field("India", min_length=2, max_length=100)
+    age: Optional[int] = Field(None, ge=0, le=120)
+    provider: str = Field("gemini", pattern="^(gemini|openai|anthropic)$")
 
-class QueryResponse(BaseModel):
-    intent: str
-    data: dict
-    ai_response: str
+    @field_validator('query')
+    @classmethod
+    def check_malicious_patterns(cls, v: str) -> str:
+        # Basic Prompt Injection Protection
+        blocked = ["ignore previous", "system prompt", "bypass", "jailbreak", "developer mode"]
+        if any(p in v.lower() for p in blocked):
+            raise ValueError("Query contains restricted patterns.")
+        return v
 
 class EligibilityRequest(BaseModel):
-    age: int
+    age: int = Field(..., ge=0, le=120)
     is_citizen: bool = True
     is_resident: bool = True
-    lang: Optional[str] = "en"
+    lang: str = Field("en", pattern="^(en|hi)$")
 
 class EligibilityResponse(BaseModel):
     eligible: bool
     message: str
 
-class Notice(BaseModel):
-    id: str
-    title: str
-    content: str
-    type: str = "info" # info, urgent, success
-    timestamp: str
+class TimelineStep(BaseModel):
+    stage: str
+    date: str
+    status: str
 
 class NoticeCreate(BaseModel):
-    title: str
-    content: str
-    type: str = "info"
-    password: str
+    title: str = Field(..., min_length=5, max_length=200)
+    content: str = Field(..., min_length=10, max_length=2000)
+    type: str = Field("info", pattern="^(info|urgent|success)$")
+    password: str # For admin validation

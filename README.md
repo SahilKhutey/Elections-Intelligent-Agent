@@ -11,76 +11,62 @@ An elite, government-grade AI-powered election guidance system designed for high
 ## 🏛️ Project Vision
 EIA is designed to bridge the information gap between the Election Commission and citizens. By leveraging multi-provider AI (OpenAI, Gemini, Claude), it transforms complex bureaucratic procedures into simple, actionable guidance tailored to the user's age, location, and eligibility status.
 
-## 🚀 Key Features
+## 🚀 Key Features (v2.0 - Production Grade)
 
-- 🏛️ **UX4G Design System**: Professional, high-readability light interface featuring "Govt Blue" palette and task-first hierarchy.
-- 🧠 **Context-Aware Intelligence**: Specialized AI personas for **Eligible Voters** vs. **Future Voters** (under 18).
-- 📍 **Location Intelligence**: Region-specific announcements (e.g., Bhopal, Delhi, Mumbai) with national-level fallbacks.
-- 📋 **Structured Eligibility**: Robust checks for Age, Citizenship, and Residency status.
-- 🌍 **Native Multilingualism**: Seamless English and Hindi integration throughout the entire stack.
-- 📅 **Interactive Roadmap**: Visualized election timeline and step-by-step registration guides.
-- 🛡️ **Admin Portal**: Secure interface for officials to publish urgent public notices.
+- 📴 **Offline Intelligence**: Resilient offline-first layer with fuzzy-matching logic for instant guidance without internet.
+- ⚡ **Real-Time Streaming**: ChatGPT-style SSE (Server-Sent Events) for a high-engagement, "live typing" AI experience.
+- 🗺️ **Polling Booth Locator**: Integrated Google Maps with Geolocation to find and navigate to nearby voting centers.
+- 🔐 **Secure Sessions**: Stateless JWT-based authentication for persistent context and secure user journeys.
+- 🌍 **Multilingual Mastery**: Native support for English and Hindi with dynamic Google Cloud Translation fallback.
+- 🏛️ **UX4G Design System**: Premium, high-readability interface featuring the "Govt Blue" palette.
+- 🛡️ **OWASP Hardening**: Advanced security headers, Pydantic input validation, and prompt injection guards.
 
 ## 🏗️ Architecture Deep Dive
 
-The system follows a **Modular Monolith** architecture optimized for a <10MB repository footprint:
+- **Frontend**: Next.js 14 (App Router). State via Context API. Real-time stream processing via `ReadableStream`.
+- **Backend**: FastAPI (Service-Oriented).
+    - `AI Service`: Unified interface for OpenAI, Gemini, and Anthropic with streaming support.
+    - `Security Layer`: JWT verification, Rate Limiting (SlowAPI), and OWASP Headers.
+    - `Offline Service`: Robust word-intersection engine for local Q&A.
+- **Data Layer**: Optimized JSON stores (`backend/data/`) for booths and offline knowledge.
 
-- **Frontend**: Next.js 14 with App Router. State management via Context API. Components are built using Vanilla CSS tokens to ensure strict UX4G compliance.
-- **Backend**: FastAPI with a Service-Oriented architecture. 
-    - `AI Service`: Unified interface for OpenAI, Gemini, and Anthropic.
-    - `Intent Service`: Rule-based classification for zero-latency routing.
-    - `Knowledge Service`: High-speed retrieval from structured JSON repositories.
-- **Data Layer**: Optimized JSON stores located in `backend/data/`, ensuring high portability and low overhead.
+## 🧪 Testing & Reliability
+- **Backend**: Full `pytest` suite with **16+ test cases** covering Query Logic, Eligibility, Timeline, Offline Matching, and Security.
+- **Frontend**: `Jest` + `React Testing Library` for component and utility verification.
+- **Coverage**: Targets 80%+ critical path coverage.
+
+## 🛡️ Security Protocol
+- **A03: Injection**: Strict Pydantic Field validation + Regex patterns.
+- **A05: Misconfig**: Custom Security Headers Middleware (CSP, XSS, HSTS).
+- **Abuse Control**: IP-based rate limiting on all intelligence endpoints.
+- **AI Safety**: Prompt injection filters and response length caps.
 
 ## 🛠️ Tech Stack
-
-- **Frontend**: Next.js 14 + Vanilla CSS + Lucide Icons
-- **Backend**: FastAPI + Pydantic V2 + Anthropic/OpenAI/Google SDKs
-- **Infrastructure**: Docker + Docker Compose + Vercel (Frontend)
+- **Frontend**: Next.js 14 + Vanilla CSS + Google Maps API
+- **Backend**: FastAPI + Pydantic V2 + SSE-Starlette + python-jose
+- **AI**: Gemini (Primary), OpenAI, Anthropic
 
 ## 🚀 Quick Start
 
 ### 1. Environment Setup
-Create a `.env` file in the `backend/` directory:
+Create a `.env` in `backend/`:
 ```env
 OPENAI_API_KEY=your_key
 GEMINI_API_KEY=your_key
-CLAUDE_API_KEY=your_key
 ADMIN_PASSWORD=your_secure_password
-ENVIRONMENT=production
+NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your_key
 ```
 
-### 2. Deployment via Docker (Recommended)
-```bash
-docker-compose up --build
-```
-The application will be available at `http://localhost:3000`.
-
-### 3. Manual Launch
-
+### 2. Launch
 **Backend:**
 ```bash
-cd backend
-pip install -r requirements.txt
-python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
+cd backend && pip install -r requirements.txt
+python -m uvicorn app.main:app --port 8000
 ```
-
 **Frontend:**
 ```bash
-cd frontend
-npm install
-npm run build
-npm run start
+cd frontend && npm install && npm run dev
 ```
 
-## ✅ Compliance & Standards
-- **Accessibility**: WCAG 2.1 AA compliant.
-- **Design**: UX4G (Government of India) design tokens.
-- **Security**: PII-blind AI processing; secure admin notice publishing.
-
-## ⚖️ License
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
 ---
-*Created for the High-Impact Civic Intelligence Hackathon 2026.*
-
+*Developed for the High-Impact Civic Intelligence Hackathon 2026.*

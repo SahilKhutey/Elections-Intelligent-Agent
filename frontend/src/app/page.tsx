@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Shield, Bell, X, AlertTriangle, MessageSquare, ListChecks, Calendar, HelpCircle } from 'lucide-react';
+import { Shield, Bell, X, AlertTriangle, MessageSquare, ListChecks, Calendar, HelpCircle, MapPin } from 'lucide-react';
 import { useLanguage } from './context/LanguageContext';
 import { useUser } from './context/UserContext';
 import Header from './components/Header';
@@ -11,6 +11,9 @@ import QuickActions from './components/QuickActions';
 import StepByStepGuide from './components/StepByStepGuide';
 import OnboardingModal from './components/OnboardingModal';
 import Announcements from './components/Announcements';
+import BoothMap from './components/BoothMap';
+import { loadOfflineDB, findOfflineAnswer } from './utils/offlineEngine';
+import { saveToCache, getFromCache } from './utils/cache';
 
 const API_BASE = "http://localhost:8000/api";
 
@@ -22,7 +25,7 @@ const UI_STRINGS = {
     aiThinking: "Generating response based on official guidelines...",
     actions: ["Voter Guide", "Key Dates", "Eligibility", "Common Questions"],
     intents: ["How do I vote?", "Show election timeline", "Am I eligible to vote?", "Show FAQs"],
-    nav: ["Assistant", "Guide", "Timeline"],
+    nav: ["Assistant", "Guide", "Timeline", "Booths"],
     adminTitle: "Admin Portal",
     noticeTitle: "Publish Official Notice"
   },
@@ -33,7 +36,7 @@ const UI_STRINGS = {
     aiThinking: "आधिकारिक दिशानिर्देशों के आधार पर प्रतिक्रिया उत्पन्न की जा रही है...",
     actions: ["मतदाता गाइड", "महत्वपूर्ण तिथियां", "पात्रता", "सामान्य प्रश्न"],
     intents: ["मैं वोट कैसे डालूं?", "चुनाव की समयरेखा दिखाएं", "क्या मैं वोट देने के लिए पात्र हूं?", "सामान्य प्रश्न दिखाएं"],
-    nav: ["सहायक", "गाइड", "समयरेखा"],
+    nav: ["सहायक", "गाइड", "समयरेखा", "केंद्र"],
     adminTitle: "एडमिन पोर्टल",
     noticeTitle: "आधिकारिक सूचना प्रकाशित करें"
   }
@@ -42,7 +45,7 @@ const UI_STRINGS = {
 export default function ElectionAssistant() {
   const { lang } = useLanguage();
   const { user, updateUser } = useUser();
-  const [activeView, setActiveView] = useState<'chat' | 'guide' | 'timeline'>('chat');
+  const [activeView, setActiveView] = useState<'chat' | 'guide' | 'timeline' | 'booths'>('chat');
   const [query, setQuery] = useState("");
   const [chat, setChat] = useState<{ role: 'user' | 'ai', content: string }[]>([]);
   const [timeline, setTimeline] = useState<any[]>([]);
@@ -55,8 +58,24 @@ export default function ElectionAssistant() {
   const [adminPassword, setAdminPassword] = useState("");
   const [newNotice, setNewNotice] = useState({ title: "", content: "", type: "info" });
   const [adminError, setAdminError] = useState("");
+  const [isOnline, setIsOnline] = useState(true);
 
   const t = UI_STRINGS[lang];
+
+  useEffect(() => {
+    loadOfflineDB();
+    
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   useEffect(() => {
     if (user.onboarded) {
@@ -67,7 +86,12 @@ export default function ElectionAssistant() {
 
   const fetchTimeline = async () => {
     try {
-      const res = await fetch(`${API_BASE}/timeline?lang=${lang}&location=${user.location}`);
+      const headers: any = {};
+      if (user.token) headers['Authorization'] = `Bearer ${user.token}`;
+      
+      const res = await fetch(`${API_BASE}/timeline?lang=${lang}&location=${user.location}`, {
+        headers: headers
+      });
       const data = await res.json();
       setTimeline(data.timeline || []);
     } catch (err) {
@@ -77,7 +101,12 @@ export default function ElectionAssistant() {
 
   const fetchNotices = async () => {
     try {
-      const res = await fetch(`${API_BASE}/notices`);
+      const headers: any = {};
+      if (user.token) headers['Authorization'] = `Bearer ${user.token}`;
+
+      const res = await fetch(`${API_BASE}/notices`, {
+        headers: headers
+      });
       const data = await res.json();
       setNotices(Array.isArray(data) ? data : []);
     } catch (err) {
@@ -95,10 +124,39 @@ export default function ElectionAssistant() {
     setChat(prev => [...prev, { role: 'user', content: activeQuery }]);
     if (!customQuery) setQuery("");
 
+    // 1. Check local cache first
+    const cachedResponse = getFromCache(activeQuery);
+    if (cachedResponse) {
+      setChat(prev => [...prev, { role: 'ai', content: cachedResponse }]);
+      setLoading(false);
+      return;
+    }
+
+    // 2. Check offline DB
+    const offlineResponse = findOfflineAnswer(activeQuery, lang);
+    if (offlineResponse) {
+      setChat(prev => [...prev, { role: 'ai', content: offlineResponse }]);
+      setLoading(false);
+      return;
+    }
+
+    // 3. Call Streaming API if online
+    if (!isOnline) {
+      setChat(prev => [...prev, { role: 'ai', content: lang === 'en' ? "You are offline and no saved data was found for this query." : "आप ऑफलाइन हैं और इस प्रश्न के लिए कोई सहेजा गया डेटा नहीं मिला।" }]);
+      setLoading(false);
+      return;
+    }
+
     try {
-      const response = await fetch(`${API_BASE}/query`, {
+      // Add a placeholder for the AI response
+      setChat(prev => [...prev, { role: 'ai', content: "" }]);
+      
+      const headers: any = { 'Content-Type': 'application/json' };
+      if (user.token) headers['Authorization'] = `Bearer ${user.token}`;
+
+      const response = await fetch(`${API_BASE}/stream`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: headers,
         body: JSON.stringify({ 
           query: activeQuery, 
           lang: lang,
@@ -107,10 +165,54 @@ export default function ElectionAssistant() {
           provider: provider
         })
       });
-      const data = await response.json();
-      setChat(prev => [...prev, { role: 'ai', content: data.ai_response }]);
+
+      if (!response.body) throw new Error("No response body");
+      
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let accumulatedResponse = "";
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        const lines = chunk.split("\n");
+
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            const data = line.slice(6).trim();
+            
+            if (data === "[DONE]") {
+              // Finalize and cache
+              saveToCache(activeQuery, accumulatedResponse);
+              setLoading(false);
+              return;
+            }
+
+            accumulatedResponse += data;
+            
+            // Update the last message in chat
+            setChat(prev => {
+              const updated = [...prev];
+              updated[updated.length - 1].content = accumulatedResponse;
+              return updated;
+            });
+          }
+        }
+      }
     } catch (err) {
-      setChat(prev => [...prev, { role: 'ai', content: lang === 'en' ? "Service temporarily unavailable. Please try again later." : "सेवा अस्थायी रूप से अनुपलब्ध है। कृपया बाद में पुनः प्रयास करें।" }]);
+      console.error("Streaming error:", err);
+      setChat(prev => {
+        const updated = [...prev];
+        const errorMsg = lang === 'en' ? "Service temporarily unavailable. Please try again later." : "सेवा अस्थायी रूप से अनुपलब्ध है। कृपया बाद में पुनः प्रयास करें।";
+        if (updated[updated.length - 1].role === 'ai' && !updated[updated.length - 1].content) {
+           updated[updated.length - 1].content = errorMsg;
+        } else {
+           updated.push({ role: 'ai', content: errorMsg });
+        }
+        return updated;
+      });
     } finally {
       setLoading(false);
     }
@@ -142,9 +244,12 @@ export default function ElectionAssistant() {
     setChat(prev => [...prev, { role: 'user', content: userMsg }]);
 
     try {
+      const headers: any = { 'Content-Type': 'application/json' };
+      if (user.token) headers['Authorization'] = `Bearer ${user.token}`;
+
       const response = await fetch(`${API_BASE}/eligibility`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: headers,
         body: JSON.stringify({ 
           age: user.age || 0,
           is_citizen: user.is_citizen,
@@ -213,6 +318,14 @@ export default function ElectionAssistant() {
       )}
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 pb-32">
+        {!isOnline && (
+          <div className="mb-6 bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded-xl flex items-center gap-3 animate-pulse">
+            <AlertTriangle className="w-5 h-5" />
+            <p className="text-sm font-bold">
+              {lang === 'hi' ? 'आप ऑफलाइन हैं। सहेजे गए मार्गदर्शन का उपयोग किया जा रहा है।' : 'You are offline. Using saved guidance for instant responses.'}
+            </p>
+          </div>
+        )}
         <Header 
           location={user.location} setLocation={(loc) => updateUser({ location: loc })} 
           age={user.age || ""} setAge={(age) => updateUser({ age: age || null })} 
@@ -265,6 +378,12 @@ export default function ElectionAssistant() {
                 </div>
               </div>
             )}
+
+            {activeView === 'booths' && (
+              <div className="animate-fade-in bg-white border border-[#E0E0E0] rounded-2xl p-8 shadow-sm">
+                <BoothMap />
+              </div>
+            )}
           </div>
 
           <aside className="space-y-8">
@@ -291,7 +410,8 @@ export default function ElectionAssistant() {
           {[
             { id: 'chat', label: t.nav[0], icon: <MessageSquare className="w-4 h-4" /> },
             { id: 'guide', label: t.nav[1], icon: <ListChecks className="w-4 h-4" /> },
-            { id: 'timeline', label: t.nav[2], icon: <Calendar className="w-4 h-4" /> }
+            { id: 'timeline', label: t.nav[2], icon: <Calendar className="w-4 h-4" /> },
+            { id: 'booths', label: t.nav[3], icon: <MapPin className="w-4 h-4" /> }
           ].map((nav) => (
             <button 
               key={nav.id} 

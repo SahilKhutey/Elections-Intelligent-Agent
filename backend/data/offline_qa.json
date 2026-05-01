@@ -1,0 +1,10 @@
+{
+  "how to vote": {
+    "en": "To vote: Register → Verify ID → Visit polling booth → Cast vote.",
+    "hi": "वोट देने के लिए: पंजीकरण → पहचान सत्यापन → मतदान केंद्र → वोट करें।"
+  },
+  "lost voter id": {
+    "en": "Download a duplicate from NVSP portal or visit your BLO.",
+    "hi": "NVSP पोर्टल से डुप्लिकेट डाउनलोड करें या अपने BLO से मिलें।"
+  }
+}

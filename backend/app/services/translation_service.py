@@ -1,7 +1,22 @@
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
+try:
+    from google.cloud import translate_v2 as translate
+except ImportError:
+    translate = None
 
 class TranslationService:
+    """
+    Multilingual Orchestration Service.
+    Supports local dictionary-based mapping and Google Cloud Translation API.
+    """
     def __init__(self):
+        self.translate_client = None
+        try:
+            if translate:
+                self.translate_client = translate.Client()
+        except Exception:
+            self.translate_client = None
+
         self.translations = {
             "en": {
                 "welcome": "Hi! I'm your Election Assistant. Ask me anything about voting!",
@@ -30,12 +45,29 @@ class TranslationService:
         }
     
     def translate_text(self, text: str, lang: str = "en") -> str:
-        if lang == "en" or lang not in self.translations:
+        """
+        Translates a single string into the target language.
+        Prioritizes Google Cloud Translate, falls back to local dictionary.
+        """
+        if lang == "en":
             return text
-        return self.translations[lang].get(text.lower().replace(" ", "_"), text)
+
+        # 1. Try Google Cloud Translate
+        if self.translate_client:
+            try:
+                result = self.translate_client.translate(text, target_language=lang)
+                return result["translatedText"]
+            except Exception:
+                pass
+
+        # 2. Fallback to Local Dictionary
+        lookup_key = text.lower().replace(" ", "_")
+        return self.translations.get(lang, {}).get(lookup_key, text)
 
     def translate_response(self, data: Any, lang: str = "en") -> Any:
-        """Recursive dictionary translation engine"""
+        """
+        Recursively translates complex data structures (dicts, lists).
+        """
         if lang == "en":
             return data
         
@@ -44,9 +76,7 @@ class TranslationService:
         elif isinstance(data, list):
             return [self.translate_response(item, lang) for item in data]
         elif isinstance(data, str):
-            # Attempt to translate known terms
-            lookup_key = data.lower().replace(" ", "_")
-            return self.translations[lang].get(lookup_key, data)
+            return self.translate_text(data, lang)
         return data
 
 translation_service = TranslationService()

@@ -6,14 +6,14 @@ import { useUser } from '../context/UserContext';
 import { useLanguage } from '../context/LanguageContext';
 
 export default function OnboardingModal() {
-  const { updateUser } = useUser();
+  const { updateUser, initSession } = useUser();
   const { lang } = useLanguage();
   const [age, setAge] = useState("");
   const [location, setLocation] = useState("India");
   const [isCitizen, setIsCitizen] = useState(true);
   const [isResident, setIsResident] = useState(true);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!age) return;
     updateUser({ 
@@ -23,6 +23,11 @@ export default function OnboardingModal() {
       is_resident: isResident,
       onboarded: true 
     });
+    
+    // Create secure session
+    setTimeout(() => {
+       initSession();
+    }, 100);
   };
 
   return (

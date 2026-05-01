@@ -16,10 +16,11 @@ from .cache import cached
 
 class AIService:
     """
-    Core AI Service responsible for generating context-aware election guidance.
-    Supports OpenAI, Google Gemini, and Anthropic Claude providers.
+    Core AI Orchestration Service for context-aware election guidance.
+    Integrates multiple LLM providers (OpenAI, Gemini, Claude) with audience-aware persona synthesis.
     """
     def __init__(self):
+        """Initializes AI clients using environment settings."""
         self.openai_key = settings.OPENAI_API_KEY
         self.gemini_key = settings.GEMINI_API_KEY
         self.claude_key = settings.CLAUDE_API_KEY
@@ -40,8 +41,21 @@ class AIService:
     @cached(ttl=600)
     def enhance_explanation(self, query: str, data: Dict[str, Any], context: Dict[str, Any]) -> str:
         """
-        Enhances raw data explanations with audience-aware natural language synthesis.
+        Synthesizes structured data into natural language responses.
+        
+        Args:
+            query: The user's original natural language question.
+            data: Structured information retrieved from the knowledge base.
+            context: Metadata including language, location, age, and preferred AI provider.
+            
+        Returns:
+            A human-friendly, context-aware explanation string.
         """
+        # Defense-in-Depth: Prompt Injection Guard
+        blocked = ["ignore previous", "system prompt", "bypass", "jailbreak", "developer mode"]
+        if any(p in query.lower() for p in blocked):
+            return "I cannot process this request as it contains restricted instructions."
+
         provider = context.get('provider', 'openai').lower()
         lang = context.get('lang', 'en')
         age = context.get('age')
@@ -94,6 +108,7 @@ class AIService:
             return self._format_fallback(data, context)
 
     def _call_openai(self, system: str, user: str) -> str:
+        """Internal helper for OpenAI GPT-3.5/4 completions."""
         response = self.openai_client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
@@ -105,11 +120,13 @@ class AIService:
         return response.choices[0].message.content.strip()
 
     def _call_gemini(self, system: str, user: str) -> str:
+        """Internal helper for Google Gemini-Pro generations."""
         full_prompt = f"{system}\n\n{user}"
         response = self.gemini_model.generate_content(full_prompt)
         return response.text.strip()
 
     def _call_claude(self, system: str, user: str) -> str:
+        """Internal helper for Anthropic Claude-3 generations."""
         response = self.anthropic_client.messages.create(
             model="claude-3-haiku-20240307",
             max_tokens=400,
@@ -118,10 +135,10 @@ class AIService:
                 {"role": "user", "content": user}
             ]
         )
-        # Handle response content which is a list of content blocks
         return response.content[0].text.strip()
 
     def _format_fallback(self, data: Dict[str, Any], context: Dict[str, Any]) -> str:
+        """Provides a safe fallback response if AI services are unavailable."""
         lang = context.get('lang', 'en')
         if lang == "hi":
             return "यहाँ आपके लिए कुछ जानकारी दी गई है।"
