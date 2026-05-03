@@ -2,6 +2,8 @@ from fastapi import APIRouter, Request
 from sse_starlette.sse import EventSourceResponse
 import asyncio
 import json
+from typing import AsyncGenerator, Dict, Any
+from app.models.schemas import QueryRequest
 from app.services.ai_service import ai_service
 from app.services.intent_service import intent_detector
 from app.services.knowledge_service import knowledge_service
@@ -10,56 +12,54 @@ from app.limiter import limiter
 
 router = APIRouter()
 
-async def stream_generator(query: str, lang: str, age: int, location: str):
+async def stream_generator(payload: QueryRequest) -> AsyncGenerator[Dict[str, str], None]:
     """
-    Simulates real-time typing by streaming the AI response word-by-word.
+    Simulates real-time typing by streaming the AI response word-by-word via SSE.
+    
+    Args:
+        payload (QueryRequest): The user's query and metadata.
+        
+    Yields:
+        Dict[str, str]: SSE event data containing response fragments.
     """
-    # Step 1: Detect Intent & Get Knowledge (Fast)
-    intent = intent_detector.detect_intent(query)
-    data = knowledge_service.get_election_process(location) if intent == "voting_process" else \
-           knowledge_service.get_timeline_template(location) if intent == "timeline" else \
+    # 1. Intent Detection & Knowledge Retrieval
+    intent = intent_detector.detect_intent(payload.query)
+    data = knowledge_service.get_election_process(payload.location) if intent == "voting_process" else \
+           knowledge_service.get_timeline_template(payload.location) if intent == "timeline" else \
            knowledge_service.get_faq(intent)
     
-    # Step 2: Translate Knowledge
-    translated_data = translation_service.translate_response(data, lang)
+    # 2. Multilingual Processing
+    translated_data = translation_service.translate_response(data, payload.lang)
     
-    # Step 3: Get Full AI Response (using the established ai_service)
+    # 3. AI Response Synthesis
     context = {
-        'location': location,
-        'age': age,
-        'lang': lang,
-        'provider': 'gemini' # Defaulting to Gemini for that "Powered by Google" feel
+        'location': payload.location,
+        'age': payload.age,
+        'lang': payload.lang,
+        'provider': payload.provider
     }
     
-    full_text = ai_service.enhance_explanation(query, translated_data, context)
+    full_text = ai_service.enhance_explanation(payload.query, translated_data, context)
 
-    # Step 4: Stream word by word
+    # 4. SSE Streaming Loop
     words = full_text.split()
-
     for word in words:
         yield {
             "event": "message",
             "data": word + " "
         }
-        await asyncio.sleep(0.04)  # Natural typing speed
+        await asyncio.sleep(0.04) # Human-like typing cadence
 
+    # 5. Signal Completion
     yield {
-        "event": "end",
+        "event": "message",
         "data": "[DONE]"
     }
 
 @router.post("/stream")
 @limiter.limit("5/minute")
-async def stream_response(request: Request):
+async def stream_response(request: Request, payload: QueryRequest):
     """
-    SSE Endpoint for real-time AI responses.
+    SSE Endpoint for real-time, interactive AI guidance.
     """
-    body = await request.json()
-    return EventSourceResponse(
-        stream_generator(
-            body.get("query"),
-            body.get("lang", "en"),
-            body.get("age"),
-            body.get("location", "India")
-        )
-    )
+    return EventSourceResponse(stream_generator(payload))

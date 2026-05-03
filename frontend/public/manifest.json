@@ -1,19 +1,19 @@
 {
   "name": "Election Intelligence Assistant",
   "short_name": "EIA",
-  "description": "Your personalized AI guide to the election process.",
+  "description": "Elite AI-powered election guidance system designed for high credibility and accessibility.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#F4F7FE",
   "theme_color": "#0B5FFF",
   "icons": [
     {
-      "src": "/icons/icon-192x192.png",
+      "src": "/icon-192.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "/icons/icon-512x512.png",
+      "src": "/icon-512.png",
       "sizes": "512x512",
       "type": "image/png"
     }

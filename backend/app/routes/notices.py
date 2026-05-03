@@ -1,44 +1,37 @@
-from fastapi import APIRouter, HTTPException
-from app.models.schemas import Notice, NoticeCreate
+from fastapi import APIRouter, Request, HTTPException
+from app.models.schemas import NoticeCreate, NoticeResponse, StandardResponse
+from app.services.notice_service import notice_service
 from app.config import settings
-import json
-import os
-import uuid
-from datetime import datetime
 from typing import List
 
 router = APIRouter()
 
-DATA_PATH = os.path.join(os.path.dirname(__file__), "../../data/notices.json")
-
-def load_notices():
-    try:
-        with open(DATA_PATH, 'r') as f:
-            return json.load(f)
-    except Exception:
-        return []
-
-def save_notices(notices):
-    with open(DATA_PATH, 'w') as f:
-        json.dump(notices, f, indent=2)
-
-@router.get("/notices", response_model=List[Notice])
+@router.get("/notices", response_model=StandardResponse[List[NoticeResponse]])
 def get_notices():
-    return load_notices()
-
-@router.post("/notices", response_model=Notice)
-def create_notice(notice: NoticeCreate):
-    if notice.password != settings.ADMIN_PASSWORD:
-        raise HTTPException(status_code=401, detail="Invalid admin password")
-    
-    notices = load_notices()
-    new_notice = {
-        "id": str(uuid.uuid4()),
-        "title": notice.title,
-        "content": notice.content,
-        "type": notice.type,
-        "timestamp": datetime.now().isoformat()
+    """
+    Retrieves the list of all official notices.
+    """
+    notices = notice_service.load_notices()
+    return {
+        "status": "success",
+        "data": notices
     }
-    notices.insert(0, new_notice) # Add to top
-    save_notices(notices)
-    return new_notice
+
+@router.post("/notices", response_model=StandardResponse[NoticeResponse])
+def create_notice(payload: NoticeCreate):
+    """
+    Creates a new official notice. Requires admin authentication.
+    """
+    if payload.password != settings.ADMIN_PASSWORD:
+        raise HTTPException(status_code=401, detail="Invalid admin credentials.")
+    
+    new_notice = notice_service.save_notice(
+        title=payload.title,
+        content=payload.content,
+        notice_type=payload.type
+    )
+    
+    return {
+        "status": "success",
+        "data": new_notice
+    }

@@ -1,72 +1,53 @@
 # 🗳️ Election Intelligence Assistant (EIA)
 
-An elite, government-grade AI-powered election guidance system designed for high credibility, accessibility, and task-driven civic engagement. Aligned with **UX4G (User Experience for Government of India)** standards.
+An elite, government-grade AI-powered election guidance system designed for high credibility, accessibility, and task-driven civic engagement. Built to comply with **UX4G** standards and engineered for maximum code quality.
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python: 3.9+](https://img.shields.io/badge/Python-3.9+-blue.svg)](https://www.python.org/)
-[![Framework: FastAPI](https://img.shields.io/badge/Framework-FastAPI-green.svg)](https://fastapi.tiangolo.com/)
+## 🏛️ Overview
+EIA bridges the information gap between the Election Commission and citizens. By leveraging multi-provider AI (Gemini, OpenAI, Claude), it transforms complex bureaucratic procedures into simple, actionable guidance tailored to the user's age, location, and eligibility status.
 
----
+## 🚀 Key Features
+- 🎤 **Voice Assistant**: Integrated bilingual (English/Hindi) voice input and output for enhanced accessibility.
+* 📴 **Offline Intelligence**: Robust offline-first layer with a local fuzzy-matching engine.
+* 📱 **PWA Ready**: Installable application with advanced service-worker caching for rural resilience.
+* ⚡ **Real-Time Streaming**: ChatGPT-style SSE for a high-engagement AI experience.
+* 🗺️ **Polling Booth Locator**: Integrated Google Maps for locating nearby voting centers.
+* 🛡️ **OWASP Hardened**: Advanced security headers, Pydantic V2 validation, and prompt injection guards.
 
-## 🏛️ Project Vision
-EIA is designed to bridge the information gap between the Election Commission and citizens. By leveraging multi-provider AI (OpenAI, Gemini, Claude), it transforms complex bureaucratic procedures into simple, actionable guidance tailored to the user's age, location, and eligibility status.
-
-## 🚀 Key Features (v2.0 - Production Grade)
-
-- 📴 **Offline Intelligence**: Resilient offline-first layer with fuzzy-matching logic for instant guidance without internet.
-- ⚡ **Real-Time Streaming**: ChatGPT-style SSE (Server-Sent Events) for a high-engagement, "live typing" AI experience.
-- 🗺️ **Polling Booth Locator**: Integrated Google Maps with Geolocation to find and navigate to nearby voting centers.
-- 🔐 **Secure Sessions**: Stateless JWT-based authentication for persistent context and secure user journeys.
-- 🌍 **Multilingual Mastery**: Native support for English and Hindi with dynamic Google Cloud Translation fallback.
-- 🏛️ **UX4G Design System**: Premium, high-readability interface featuring the "Govt Blue" palette.
-- 🛡️ **OWASP Hardening**: Advanced security headers, Pydantic input validation, and prompt injection guards.
-
-## 🏗️ Architecture Deep Dive
-
-- **Frontend**: Next.js 14 (App Router). State via Context API. Real-time stream processing via `ReadableStream`.
-- **Backend**: FastAPI (Service-Oriented).
-    - `AI Service`: Unified interface for OpenAI, Gemini, and Anthropic with streaming support.
-    - `Security Layer`: JWT verification, Rate Limiting (SlowAPI), and OWASP Headers.
-    - `Offline Service`: Robust word-intersection engine for local Q&A.
-- **Data Layer**: Optimized JSON stores (`backend/data/`) for booths and offline knowledge.
-
-## 🧪 Testing & Reliability
-- **Backend**: Full `pytest` suite with **16+ test cases** covering Query Logic, Eligibility, Timeline, Offline Matching, and Security.
-- **Frontend**: `Jest` + `React Testing Library` for component and utility verification.
-- **Coverage**: Targets 80%+ critical path coverage.
-
-## 🛡️ Security Protocol
-- **A03: Injection**: Strict Pydantic Field validation + Regex patterns.
-- **A05: Misconfig**: Custom Security Headers Middleware (CSP, XSS, HSTS).
-- **Abuse Control**: IP-based rate limiting on all intelligence endpoints.
-- **AI Safety**: Prompt injection filters and response length caps.
+## 🏗️ Architecture
+The system follows a clean, service-oriented architecture:
+- **Frontend**: Next.js 14 (App Router) with a task-first UI.
+- **Backend**: FastAPI (Service-Oriented) with standardized API responses.
+    - `core/`: Configuration and security protocols.
+    - `services/`: Encapsulated business logic (AI, Intent, Notices, etc.).
+    - `routes/`: Thin API endpoints with strict schema validation.
+    - `models/`: Centralized Pydantic schemas.
 
 ## 🛠️ Tech Stack
-- **Frontend**: Next.js 14 + Vanilla CSS + Google Maps API
-- **Backend**: FastAPI + Pydantic V2 + SSE-Starlette + python-jose
-- **AI**: Gemini (Primary), OpenAI, Anthropic
+- **Frontend**: Next.js 14, Vanilla CSS, Lucide Icons, Web Speech API.
+- **Backend**: FastAPI, Pydantic V2, SSE-Starlette, SlowAPI, PyJWT.
+- **AI**: Google Gemini (Primary), OpenAI GPT-3.5/4, Anthropic Claude 3.
 
-## 🚀 Quick Start
+## 🔧 Setup & Installation
 
-### 1. Environment Setup
-Create a `.env` in `backend/`:
-```env
-OPENAI_API_KEY=your_key
-GEMINI_API_KEY=your_key
-ADMIN_PASSWORD=your_secure_password
-NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your_key
-```
-
-### 2. Launch
-**Backend:**
+### Backend
 ```bash
-cd backend && pip install -r requirements.txt
-python -m uvicorn app.main:app --port 8000
+cd backend
+pip install -r requirements.txt
+python -m uvicorn app.main:app --port 8000 --reload
 ```
-**Frontend:**
+
+### Frontend
 ```bash
-cd frontend && npm install && npm run dev
+cd frontend
+npm install
+npm run dev
 ```
+
+## 🧪 Quality Standards
+- **Docstrings**: All core functions and classes are documented using professional standards.
+- **Type Hints**: 100% coverage of Python type hints for better maintainability.
+- **Standardized Responses**: All API endpoints return a consistent `{"status": "success", "data": ...}` format.
+- **Validation**: Strict schema enforcement using Pydantic V2.
 
 ---
 *Developed for the High-Impact Civic Intelligence Hackathon 2026.*

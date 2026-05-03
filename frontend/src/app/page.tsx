@@ -12,8 +12,11 @@ import StepByStepGuide from './components/StepByStepGuide';
 import OnboardingModal from './components/OnboardingModal';
 import Announcements from './components/Announcements';
 import BoothMap from './components/BoothMap';
+import AdminPortal from './components/AdminPortal';
+import TimelineView from './components/TimelineView';
 import { loadOfflineDB, findOfflineAnswer } from './utils/offlineEngine';
 import { saveToCache, getFromCache } from './utils/cache';
+import { speak } from './utils/speech';
 
 const API_BASE = "http://localhost:8000/api";
 
@@ -128,6 +131,7 @@ export default function ElectionAssistant() {
     const cachedResponse = getFromCache(activeQuery);
     if (cachedResponse) {
       setChat(prev => [...prev, { role: 'ai', content: cachedResponse }]);
+      speak(cachedResponse, lang);
       setLoading(false);
       return;
     }
@@ -136,6 +140,7 @@ export default function ElectionAssistant() {
     const offlineResponse = findOfflineAnswer(activeQuery, lang);
     if (offlineResponse) {
       setChat(prev => [...prev, { role: 'ai', content: offlineResponse }]);
+      speak(offlineResponse, lang);
       setLoading(false);
       return;
     }
@@ -186,6 +191,7 @@ export default function ElectionAssistant() {
             if (data === "[DONE]") {
               // Finalize and cache
               saveToCache(activeQuery, accumulatedResponse);
+              speak(accumulatedResponse, lang);
               setLoading(false);
               return;
             }
@@ -288,34 +294,17 @@ export default function ElectionAssistant() {
         </div>
       )}
 
-      {/* Admin Modal (Light Theme) */}
-      {isAdminOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#1A1A1A]/40 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white border border-[#E0E0E0] rounded-2xl p-8 max-w-md w-full shadow-2xl relative">
-            <button onClick={() => setIsAdminOpen(false)} className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-full transition-colors"><X className="w-5 h-5 text-[#555555]" /></button>
-            <h2 className="text-2xl font-bold mb-6 flex items-center gap-2 text-[#1A1A1A]"><Shield className="text-[#0B5FFF]" /> {t.adminTitle}</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-[#555555] uppercase mb-1.5 ml-1">Access Key</label>
-                <input type="password" placeholder="••••••••" value={adminPassword} onChange={(e) => setAdminPassword(e.target.value)} className="w-full bg-white border border-[#E0E0E0] rounded-xl py-3 px-5 focus:outline-none focus:border-[#0B5FFF] focus:ring-4 focus:ring-[#0B5FFF]/5 text-[#1A1A1A]" />
-              </div>
-              <div className="h-px bg-[#E0E0E0] my-2"></div>
-              <div>
-                <label className="block text-xs font-bold text-[#555555] uppercase mb-1.5 ml-1">Notice Details</label>
-                <input type="text" placeholder="Title" value={newNotice.title} onChange={(e) => setNewNotice({...newNotice, title: e.target.value})} className="w-full bg-white border border-[#E0E0E0] rounded-xl py-3 px-5 focus:outline-none focus:border-[#0B5FFF] mb-3 text-[#1A1A1A]" />
-                <textarea placeholder="Message content..." value={newNotice.content} onChange={(e) => setNewNotice({...newNotice, content: e.target.value})} className="w-full bg-white border border-[#E0E0E0] rounded-xl py-3 px-5 focus:outline-none focus:border-[#0B5FFF] min-h-[100px] text-[#1A1A1A]" />
-              </div>
-              <select value={newNotice.type} onChange={(e) => setNewNotice({...newNotice, type: e.target.value})} className="w-full bg-white border border-[#E0E0E0] rounded-xl py-3 px-5 focus:outline-none focus:border-[#0B5FFF] text-[#1A1A1A]">
-                <option value="info">General Information</option>
-                <option value="urgent">Urgent Alert</option>
-                <option value="success">Status Update</option>
-              </select>
-              {adminError && <p className="text-[#D32F2F] text-xs px-2 flex items-center gap-1 font-medium"><AlertTriangle className="w-3.5 h-3.5" /> {adminError}</p>}
-              <button onClick={publishNotice} className="w-full bg-[#0B5FFF] hover:bg-[#084ACC] text-white py-4 rounded-xl font-bold transition-all shadow-lg shadow-[#0B5FFF]/10 active:scale-95">Publish Notice</button>
-            </div>
-          </div>
-        </div>
-      )}
+      <AdminPortal 
+        isOpen={isAdminOpen} 
+        setIsOpen={setIsAdminOpen} 
+        adminPassword={adminPassword} 
+        setAdminPassword={setAdminPassword} 
+        newNotice={newNotice} 
+        setNewNotice={setNewNotice} 
+        adminError={adminError} 
+        publishNotice={publishNotice} 
+        t={t} 
+      />
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 pb-32">
         {!isOnline && (
@@ -347,6 +336,7 @@ export default function ElectionAssistant() {
                   placeholder={t.placeholder}
                   aiThinking={t.aiThinking}
                   location={user.location}
+                  lang={lang}
                 />
                 <QuickActions 
                   onSelect={handleActionClick} 
@@ -363,20 +353,7 @@ export default function ElectionAssistant() {
             )}
 
             {activeView === 'timeline' && (
-              <div className="bg-white border border-[#E0E0E0] rounded-2xl p-8 shadow-sm animate-fade-in">
-                <h2 className="text-2xl font-bold mb-8 flex items-center gap-2 text-[#1A1A1A]"><Calendar className="text-[#0B5FFF] w-6 h-6" /> {t.timelineTitle}</h2>
-                <div className="grid gap-6">
-                  {timeline.map((step, i) => (
-                    <div key={i} className="flex items-start gap-5 p-5 rounded-xl bg-white border border-[#E0E0E0] hover:bg-[#F4F7FE] transition-all group">
-                      <div className="w-11 h-11 rounded-lg bg-[#F4F7FE] flex items-center justify-center text-[#0B5FFF] font-bold group-hover:bg-[#0B5FFF] group-hover:text-white transition-all shadow-sm border border-[#0B5FFF]/10">{i+1}</div>
-                      <div>
-                        <h4 className="font-bold text-[#1A1A1A] text-lg">{step.stage}</h4>
-                        <p className="text-sm text-[#555555] leading-relaxed mt-1 font-medium">{step.status}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <TimelineView timeline={timeline} title={t.timelineTitle} />
             )}
 
             {activeView === 'booths' && (

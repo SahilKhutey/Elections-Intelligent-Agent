@@ -20,6 +20,9 @@ class MemoryCache:
         expiry = datetime.now() + timedelta(seconds=ttl)
         self.cache[key] = (value, expiry)
 
+    def clear(self):
+        self.cache = {}
+
 memory_cache = MemoryCache()
 
 def cached(ttl: int = 300):

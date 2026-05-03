@@ -2,6 +2,7 @@
 
 import React, { useRef, useEffect } from 'react';
 import { Send, Loader2, Bot, User, Shield } from 'lucide-react';
+import VoiceInput from './VoiceInput';
 
 interface ChatBoxProps {
   chat: { role: 'user' | 'ai', content: string }[];
@@ -12,10 +13,11 @@ interface ChatBoxProps {
   placeholder: string;
   aiThinking: string;
   location: string;
+  lang: 'en' | 'hi';
 }
 
 export default function ChatBox({ 
-  chat, loading, query, setQuery, handleSend, placeholder, aiThinking, location 
+  chat, loading, query, setQuery, handleSend, placeholder, aiThinking, location, lang 
 }: ChatBoxProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -93,6 +95,13 @@ export default function ChatBox({
               onChange={(e) => setQuery(e.target.value)}
               placeholder={placeholder}
               className="flex-1 bg-white border border-[#E0E0E0] rounded-xl px-5 py-3.5 focus:outline-none focus:border-[#0B5FFF] focus:ring-4 focus:ring-[#0B5FFF]/5 transition-all text-[#1A1A1A]"
+            />
+            <VoiceInput 
+              lang={lang} 
+              onResult={(text) => {
+                setQuery(text);
+                setTimeout(() => handleSend(text), 100);
+              }} 
             />
             <button 
               type="submit"
